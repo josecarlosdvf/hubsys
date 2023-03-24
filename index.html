@@ -1,0 +1,670 @@
+<html>
+ 
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>CallCenter</title>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.7.0/css/font-awesome.css}" />
+    <link rel='stylesheet' th:href='@{/webjars/bootstrap/3.3.7/css/bootstrap.min.css}'>
+    <link rel='stylesheet' th:href='@{/webjars/jgrowl/1.4.6/jquery.jgrowl.css}'>
+    <link rel='stylesheet' th:href='@{/static/css/client.css}'>
+</head>
+ <body th:class="${paused}">
+	<div class="header">
+		<div class="auth">
+			<div class="continuar">
+				<div class="btn-group btnContinuar">
+				  <button type="button" class="btn btn-success btnParada" id="btnContinuar">Continuar</button>
+				</div>
+			</div>
+			<div class="pause">
+				<div class="btn-group btnPause">
+				  <button type="button" class="btn btn-danger btnParada">Pausa</button>
+				  <button type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					<span class="caret"></span>
+					<span class="sr-only"></span>
+				  </button>
+				  <ul class="dropdown-menu">
+					<li th:each="item : ${tiposParada}"><a href="javascript:void(0)" data-stop th:text="${item.tipo}" th:data-tipo="${item.tipo}" th:data-id="${item.id}" th:data-exige-justificativa="${item.exigeJustificativa}" th:data-exige-autorizacao="${item.exigeAutorizacao}"></a></li>
+				  </ul>
+				</div>
+			</div>
+			<div class="logo">
+				<img src="" th:src='@{/static/images/logo-login.png}'/>
+			</div>
+			<div class="user">
+				<div class="logoff">
+					<a href="#" th:href="@{/logout}"  />
+						<i class="fa fa-power-off fa-2" aria-hidden="true"></i>
+					</a>
+				</div>
+				<div class="username">
+					<label th:utext="${loggedinuser}"></label>
+					(<label th:utext="${loggedinramal}"></label>)
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="containerConteudo">
+		<div class="conteudo">
+			<div class="col-md-4">
+				<div class="row">
+					<div class="col-md-12 textfila">
+						<span>Fila de chamadas</span> (<span id="qtdFilas" th:text="${qtdFilas}"></span>)
+						<button class="custombtn" id="btnFilas" data-filas-selected="" data-filas-not-selected="" type="button"><i class="fa fa-plus"></i></button>
+					</div>
+					<div class="col-md-12">
+						<div class="fila">
+							<table class="table table-striped">
+							  <thead>
+								<tr>
+									<th>Fila</th>
+									<th>Número</th>
+									<th>Tempo de espera</th>
+								</tr>
+							  </thead>
+							  <tbody id="bodyPendingCalls">
+								<tr th:each="item : ${pendingCalls}">
+									<th th:text="${item.queueName}"></th>
+									<td th:text="${item.callId}"></td>
+									<td>
+									<time th:datetime="${item.time} + '000'" data-time-tooltip="">
+					                    <span data-time-label="#_in" class=""></span>
+					                    <span data-time-label="td_h" class="number"></span> hr(s)
+					                    <span data-time-label="d_mm" class="number"></span> min(s)
+					                    <span data-time-label="d_ss" class="number"></span> seg(s)
+					                </time>
+					                </td>
+								</tr>
+							  </tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-8">
+				<div class="row">
+					<div class="col-md-12">
+						<div class="chamado">
+							<div class="titulo">Chamada atual</div>
+							<div id="containerActiveCall" style="display: none;padding-left: 10px;">
+								<div class="row" style="min-height: 35px;">
+									<div class="col-md-2" style="color:#888888;padding-top:7px;">
+										Número atual
+									</div>
+									<div class="col-md-10" style="font-size:26px;" id="activeNumero">
+									</div>
+								</div>
+								<div class="row" style="min-height: 35px;">
+									<div class="col-md-2" style="color:#888888;padding-top:7px;">
+										Fila
+									</div>
+									<div class="col-md-10" style="font-size:26px;" id="chamadaAtualFila">
+									</div>
+								</div>
+								<div class="row" style="min-height: 35px;">
+									<div class="col-md-2" style="color:#888888;padding-top:7px;">
+										Tempo de espera
+									</div>
+									<div class="col-md-10" style="font-size:26px;" id="activeEspera">
+									</div>
+								</div>
+								<div class="row" style="min-height: 35px;">
+									<div class="col-md-2" style="color:#888888;padding-top:7px;">
+										Tempo de ligação
+									</div>
+									<div class="col-md-10" style="font-size:26px;" id="activeLigacao">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-12">
+						<div class="historico">
+							<div class="titulo">Histórico</div>
+							<div class="historyTable">
+								<table class="table table-striped">
+									  <thead>
+										<tr>
+											<th></th>
+											<th>Data/hora</th>
+											<th>Fila</th>
+											<th>Número</th>
+											<th>Tempo de ligação</th>
+										</tr>
+									  </thead>
+									  <tbody id="bodyHistoryCalls">
+										<tr th:each="item : ${historyCalls}">
+											<th></th>
+											<th th:text="${item.time}"></th>
+											<th th:text="${item.queueName}"></th>
+											<td th:text="${item.callId}"></td>
+											<td>
+											<span th:text="${item.duration}"></span>
+							                </td>
+										</tr>
+									  </tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="conteudoPaused">
+			<div style="color: #fff;margin: auto; width:50%;text-align:center;top: 10%;position: relative;">
+				<div style="font-size: 36px;text-align:center;">Pausado</div>
+				<div style="font-size: 20px;text-align;">
+					<time id="pauseStartTime" th:datetime="${pauseStart} + '000'" data-time-tooltip="">
+	                    <span data-time-label="#_in" class=""></span>
+	                    <span data-time-label="td_h" class="number"></span> hr(s)
+	                    <span data-time-label="d_mm" class="number"></span> min(s)
+	                    <span data-time-label="d_ss" class="number"></span> seg(s)
+	                </time>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade" tabindex="-1" role="dialog" id="modalFilas">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	        <h4 class="modal-title">Escolha as filas</h4>
+	      </div>
+	      <div class="modal-body">
+	        <div class="row">
+			    <div class="col-xs-5">
+			        <select name="from[]" id="multiselect" class="form-control" size="8" multiple="multiple">
+			            <option th:each="item : ${filasNotSelected}" th:value="${item.id}"><span th:text="${item.nome}"></span></option>
+			        </select>
+			    </div>
+			    
+			    <div class="col-xs-2">
+			        <button type="button" id="multiselect_rightAll" class="btn btn-block"><i class="glyphicon glyphicon-forward"></i></button>
+			        <button type="button" id="multiselect_rightSelected" class="btn btn-block"><i class="glyphicon glyphicon-chevron-right"></i></button>
+			        <button type="button" id="multiselect_leftSelected" class="btn btn-block"><i class="glyphicon glyphicon-chevron-left"></i></button>
+			        <button type="button" id="multiselect_leftAll" class="btn btn-block"><i class="glyphicon glyphicon-backward"></i></button>
+			    </div>
+			    
+			    <div class="col-xs-5">
+			        <select name="to[]" id="multiselect_to" class="form-control" size="8" multiple="multiple">
+			        	<option th:each="item : ${filasSelected}" th:value="${item.id}"><span th:text="${item.nome}"></span></option>
+			        </select>
+			    </div>
+			</div>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+	        <button type="button" class="btn btn-primary" id="btnConfirmQueue">Confirmar</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	
+	<div class="modal fade" tabindex="-1" role="dialog" id="modalParada">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	        <h4 class="modal-title">Confirmar parada</h4>
+	      </div>
+	      <div class="modal-body">
+			<div class="row">
+				<div class="col-xs-12">
+					<span>Motivo</span>
+				</div>
+				<div class="col-xs-12">
+					<h1 id="titleParada" style="margin-top:0px;"></h1>
+				</div>
+				<div class="col-xs-12">
+					<span>Justificativa</span>
+				</div>
+				<div class="col-xs-12">
+					<textarea id="justificativaParada"  name="justificativaParada" rows="4" style="width:100%"></textarea>
+				</div>
+				<div class="col-xs-12" id="campoObrigatorio" style="display:none;">
+					<span style="color:#e66454;">Campo obrigatório, por favor informe a justificativa da pausa.</span>
+				</div>
+			</div>
+	      </div>
+	      <div class="modal-footer">
+	      	<input type="hidden" id="motivoParada" value="" />
+	      	<input type="hidden" id="autorizacaoParada" value="" />
+	        <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+	        <button type="button" class="btn btn-primary" id="btnConfirmStop">Confirmar</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	
+	<div class="modal fade" tabindex="-1" role="dialog" id="modalLogout">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h4 class="modal-title">Logout</h4>
+	      </div>
+	      <div class="modal-body">
+			<div class="row">
+				<div class="col-xs-12">
+					<span>Outro usuário realizou login no seu ramal.</span>
+				</div>
+			</div>
+	      </div>
+	      <div class="modal-footer">
+	        <a href="#" th:href="@{/logout}"/>Confirmar</a>
+	      </div>
+	    </div>
+	  </div>
+	  </div>
+	  
+	<div class="modal fade" tabindex="-1" role="dialog" id="modalUnPause">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	        <h4 class="modal-title">Continuar atendimento neste ramal?</h4>
+	      </div>
+	      <div id="idBodyJusAtraso" class="modal-body">
+			<div class="row">
+				<div class="col-xs-12">
+					<span>Justificativa do Atraso</span>
+				</div>
+				<div class="col-xs-12">
+					<textarea id="justificativaAtraso" name="justificativaAtraso" rows="4" style="width:100%"></textarea>
+				</div>
+				<div class="col-xs-12" id="campoObrigatorioJusAtraso" style="display:none;">
+					<span style="color:#e66454;">Campo obrigatório, por favor informe a justificativa do atraso.</span>
+				</div>
+			</div>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+	        <button type="button" class="btn btn-success" id="btnConfirmUnPause">Confirmar</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	
+	<div class="mmodal fade" id="overlay" tabindex="-1" role="dialog">
+	  <div class="mmodal-dialog" role="document">
+	    <div class="mmodal-content">
+	      <div class="mmodal-header">
+	        <h4 class="mmodal-title">Autorização solicitada!</h4>
+	      </div>
+	      <div class="mmodal-body">
+	        <p>Sua pausa foi solicitada com sucesso.</p>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	
+	<spring:url th:value="@{/client/pendingCalls}" var="pendingCalls" />
+	<spring:url th:value="@{/client/currentCall}" var="currentCall" />
+	<spring:url th:value="@{/client/updateInfo}" var="updateInfo" />
+	<spring:url th:value="@{/client/addFila}" var="updateClientFila" />
+	<spring:url th:value="@{/client/pause}" var="pauseClient" />
+	<spring:url th:value="@{/client/unpause}" var="unpauseClient" />
+	<spring:url th:value="@{/client/getExigeJustificativaAtraso}" var="getExigeJustificativaAtraso" />
+	<spring:url th:value="${mostrarLigacoesPerdidas}" var="mostrarLigacoesPerdidas" />
+	<spring:var th:value="${baseHREF}" var="baseHREF" />
+	<spring:var th:value="${ramal}" var="ramal" />
+	<spring:var th:value="${userID}" var="userID" />
+    <script type="text/javascript" th:src="@{/webjars/jquery/2.0.3/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}"></script>
+	<script type="text/javascript" th:src="@{/webjars/bootbox/4.4.0/bootbox.js}"></script>
+	<script type="text/javascript" th:src="@{/webjars/jgrowl/1.4.6/jquery.jgrowl.js}"></script>
+	<script type="text/javascript" th:src="@{/webjars/momentjs/2.22.2/moment.js}"></script>
+	<script type="text/javascript" th:src="@{/static/js/multiselect.min.js}"></script>
+	<script type="text/javascript" th:src="@{/static/js/jlivetime.js}"></script>
+	<script type="text/javascript" th:inline="javascript">
+		var listaPerdidosAnterior = new Array();
+		var listaPerdidosAtual = new Array();
+		function comparer(otherArray){ return function(current){ return otherArray.filter(function(other){ return other.id == current.id }).length == 0; } };		
+		var updateInfo = (function workerUpdateInfo() {
+	  	  $.ajax({
+	  	    url: $('[var=updateInfo]').attr('value'), 		   
+	  	    success: function(data) {
+	  	    	$('#bodyPendingCalls > tr').remove();
+	  	    	$('#bodyHistoryCalls > tr').remove();
+	  	    	if(typeof data =='object')
+	  	    	{
+	  	    		if(data.hasOwnProperty('filas')) {
+	  	    			$('#qtdFilas').html(data.filas);
+	  	    		}
+					if(data.hasOwnProperty('pause')) {
+						if(!$('body').hasClass('paused')) {
+							$('body').removeClass('ativo');
+							$('body').addClass('paused');
+							$('#pauseStartTime').attr('datetime', data.pause.pause_start);													
+							$(document.body).livetime();
+						}
+	  	    		} else {
+	  	    			if($('body').hasClass('paused')) {
+	  	    				$('body').removeClass('paused');
+	  				    	$('body').addClass('ativo');
+	  						if(data.filas == 0) {
+	  						 $('#modalFilas').modal();
+	  						}
+	  	    			}
+	  	    		}
+	  	    		if(data.hasOwnProperty('call')) {
+		  	    		if(data.call.hasOwnProperty('caller')) {
+			  	    		$('#activeNumero').html(data.call.caller);
+			  	    		$('#activeEspera').html(data.call.wait);
+			  	    		$('#chamadaAtualFila').html(data.call.queuename);
+			  	    		$('#activeLigacao').html('<time id="timeCall" datetime="'+ data.call.time + '" data-time-tooltip=""><span data-time-label="#_in" class=""></span><span data-time-label="td_h" class="number"></span> hr(s) <span data-time-label="d_mm" class="number"></span> min(s) <span data-time-label="d_ss" class="number"></span> seg(s)</time>');
+			  	    		$('#containerActiveCall').show();
+		  	    		} else {
+		  	    			$('#activeNumero').html('');
+			  	    		$('#activeEspera').html('');
+			  	    		$('#activeLigacao').html('');
+		  	    			$('#containerActiveCall').hide();
+		  	    		}
+	  	    		} else {
+	  	    			$('#activeNumero').html('');
+		  	    		$('#activeEspera').html('');
+		  	    		$('#activeLigacao').html('');
+	  	    			$('#containerActiveCall').hide();
+	  	    		}    		
+	  	    		if(data.hasOwnProperty('pending')) {
+		    			$.each(data.pending, function(k,item) {
+		    				$('#bodyPendingCalls').append('<tr><td>'+ item.queuename +'</td><td>'+ item.callid +'</td><td><time datetime="'+ item.time + '" data-time-tooltip=""><span data-time-label="#_in" class=""></span><span data-time-label="td_h" class="number"></span> hr(s) <span data-time-label="d_mm" class="number"></span> min(s) <span data-time-label="d_ss" class="number"></span> seg(s)</time></td></tr>');
+		    			});
+	  	    		}	  	    		
+	  	    		if(data.hasOwnProperty('history')) {
+	  	    			listaPerdidosAtual = new Array();
+		    			$.each(data.history, function(k,item) {	    				
+		    				$('#bodyHistoryCalls').append('<tr><td>'+ (item.event == 'RINGNOANSWER' ? '<i class="fa fa-arrow-circle-left"></i>' : (item.event == 'ABANDON' ? '<i class="fa fa-reply-all"></i>': '')) +'</td><td>'+ item.time +'</td><td>'+ item.queuename +'</td><td>'+ item.callid +'</td><td>'+ item.duration +'</td></tr>');
+		    				if(item.event == 'RINGNOANSWER' || item.event == 'ABANDON') {
+		    					listaPerdidosAtual.push(item);
+		    				}
+		    			});
+	  	    		}		
+	  	    		var historicoDiference = listaPerdidosAtual.filter(comparer(listaPerdidosAnterior));
+	  	    		listaPerdidosAnterior = listaPerdidosAtual;
+	  	    		if($('[var=mostrarLigacoesPerdidas]').attr('value') == "true") {
+		  	    		$.each(historicoDiference, function(k,item) {
+		  	    		
+		  	    			if(item.message == "true") {
+		  	    				$.jGrowl("Ligação perdida de " + item.callid, { sticky: true });
+		  	    			}		    				
+		    			});
+	  	    		}	  	    		
+	  	    		if(data.hasOwnProperty('filas_selected')) {
+	  	    			$('#btnFilas').data('filas-selected',data.filas_selected);
+	  	    		}	  	    		
+	  	    		if(data.hasOwnProperty('filas_not_selected')) {
+	  	    			$('#btnFilas').data('filas-not-selected',data.filas_not_selected);
+	  	    		}
+	  	    		$(document.body).livetime();	
+	  	    	}
+	  	    },
+	  	    complete: function() {	  	    		
+		      	setTimeout(workerUpdateInfo, 3000);
+			},
+			error: function (xhr, ajaxOptions, thrownError) {
+		  		if(xhr.status == 500) {
+		  			//window.location.reload();
+		  		}
+		  		else if(xhr.status == 403) {
+		  		
+		  		}
+		  		else {
+		  		
+		  		}
+	  		}
+	  	  });
+		})();
+				
+		var fnChooseQueue = function(params) {
+			var token = $("meta[name='_csrf']").attr("content");
+			var header = $("meta[name='_csrf_header']").attr("content");
+			var jsonParams = JSON.stringify(params);
+			$.ajax({
+			    type: 'POST',
+			    url: $('[var=updateClientFila]').attr('value'),
+			    data: jsonParams,
+			    contentType: 'application/json',
+			    beforeSend: function(xhr, settings){
+			        xhr.setRequestHeader(header, token);
+			    },
+				error: function (xhr, ajaxOptions, thrownError) {
+			  		if(xhr.status == 500) {
+			  			//window.location.reload();
+			  		}
+			  		else if(xhr.status == 403) {
+			  		
+			  		}
+			  		else {
+			  		
+			  		}
+		  		}
+			});
+		}
+
+		var fnPauseClient = function(params) {
+			var token = $("meta[name='_csrf']").attr("content");
+			var header = $("meta[name='_csrf_header']").attr("content");
+			var jsonParams = JSON.stringify(params);
+			$.ajax({
+			    type: 'POST',
+			    url: $('[var=pauseClient]').attr('value'),
+			    data: jsonParams,
+			    contentType: 'application/json',
+			    beforeSend: function(xhr, settings){
+			        xhr.setRequestHeader(header, token);
+			    },
+			    dataType: "json",
+			    success: function (data) {
+			    	if($('#autorizacaoParada').val() == 'false') {
+						$('body').removeClass('ativo');
+						$('body').addClass('paused');
+						$('#pauseStartTime').attr('datetime', data.pause_start);
+			    	} else {
+			    		$('#overlay').modal('show');
+			    		setTimeout(function() {
+			    		    $('#overlay').modal('hide');
+			    		}, 3000);
+			    	}
+			    	$('#modalParada').modal('hide');
+					$(document.body).livetime();
+	            },
+				error: function (xhr, ajaxOptions, thrownError) {
+			  		if(xhr.status == 500) {
+			  			//window.location.reload();
+			  		}
+			  		else if(xhr.status == 403) {
+			  		
+			  		}
+			  		else {
+			  		
+			  		}
+		  		}
+			});
+		}
+		
+		var fnUnPauseClient = function(params) {
+			var token = $("meta[name='_csrf']").attr("content");
+			var header = $("meta[name='_csrf_header']").attr("content");
+			var jsonParams = JSON.stringify(params);
+			$.ajax({
+			    type: 'POST',
+			    url: $('[var=unpauseClient]').attr('value'),
+			    data: jsonParams,
+			    contentType: 'application/json',
+			    beforeSend: function(xhr, settings){
+			        xhr.setRequestHeader(header, token);
+			    },
+			    dataType: "json",
+			    success: function (data) {
+	    	        $('body').removeClass('paused');
+			    	$('body').addClass('ativo');
+			    	$('#pauseStartTime').attr('datetime', '000');
+					if(data.filas == 0) {
+					 $('#modalFilas').modal();
+					}
+	            },
+				error: function (xhr, ajaxOptions, thrownError) {
+			  		if(xhr.status == 500) {
+			  			//window.location.reload();
+			  		}
+			  		else if(xhr.status == 403) {
+			  		
+			  		}
+			  		else {
+			  		
+			  		}
+		  		}
+			});
+		}
+			
+		function fnExigeJustificativaAtraso() {
+			var exige = false;					
+			var token = $("meta[name='_csrf']").attr("content");
+			var header = $("meta[name='_csrf_header']").attr("content");
+			$.ajax({
+			    type: 'GET',
+                url: $('[var=getExigeJustificativaAtraso]').attr('value'),
+                beforeSend: function(xhr, settings){
+			        xhr.setRequestHeader(header, token);
+			    },
+                dataType: 'json',
+                async: false,
+                success: function(data) {               	
+    	  	    	if(data.hasOwnProperty('data')) {	
+    	  	    		if (data.data == '1'){
+    	  	    			exige = true;
+    	  	    		} else {
+    	  	    			exige = false;
+    	  	    		}
+    	  	    	}
+                }
+			});	
+			return exige;
+		}
+		
+		var fnVerificaRamal = (function workerVerificaRamal() {
+			$.ajax({
+			    type: 'GET',
+	               url: $('[var=baseHREF]').attr('value') + "/client/verificaRamalLogado/"+$('[var=ramal]').attr('value') + "/" + $('[var=userID]').attr('value'),
+	               dataType: 'json',
+	               success: function(data) {
+	   	  	    	if(data.hasOwnProperty('data')) {	
+	   	  	    		if (data.data == '0'){
+		   	  	    		if(!$('#modalLogout').is(':visible')) {
+		   	  	    			$('#modalLogout').modal();	
+		   	  	    		}
+	   	  	    		}
+	   	  	    	}
+	               },
+	               complete: function() {
+	               	setTimeout(workerVerificaRamal, 3000);
+	               }
+			});
+		})();
+		
+		$(document).ready(function($) {
+		    $('#multiselect').multiselect();
+		    [# th:if="${selectQueues.equals('1') }"]
+		    	$('#modalFilas').modal();
+            [/]
+            $('#btnFilas').click(function() {
+            	$('#multiselect > option, #multiselect_to > option').remove();
+            	if($(this).data('filas-selected') != '') {
+            		var filas_selected = JSON.parse(atob($(this).data('filas-selected')));
+            		$.each(filas_selected, function(k,v) {
+        				$('#multiselect_to').append('<option value="'+ v.id +'"><span>'+ v.nome +'</span></option>');
+        			});
+            	}
+            	if($(this).data('filas-not-selected')) {
+	    			var filas_not_selected = JSON.parse(atob($(this).data('filas-not-selected')));
+	    			
+	    			$.each(filas_not_selected, function(k,v) {
+	    				$('#multiselect').append('<option value="'+ v.id +'"><span>'+ v.nome +'</span></option>');
+	    			});
+            	}
+            	$('#modalFilas').modal();
+            });
+		    $('[data-stop]').click(function(){
+		    	if($(this).data('exige-justificativa') == true) {
+	    			$('#campoObrigatorio').show();
+		    	} else {
+		    		$('#campoObrigatorio').hide();
+		    	}
+		    	$('#justificativaParada').val('');
+		    	$('#justificativaParada').text('');
+		    	$('#titleParada').html($(this).data('tipo'));
+		    	$('#autorizacaoParada').val($(this).data('exige-autorizacao'));
+		    	$('#motivoParada').val($(this).data('id'));
+		    	$('#modalParada').modal();
+		    });
+		    $('#btnConfirmQueue').click(function() {
+		    	var params = new Array();
+		    	$('#multiselect_to option').each(function(k,v) {
+		    		params.push({
+		    			"id": $(v).val(),
+		    			"nome": $(v).text()
+		    		});	    		
+	    		});
+		    	fnChooseQueue(params);
+		    	$('#qtdFilas').html($('#multiselect_to option').length);
+		    	$('#modalFilas').modal('hide');
+		    });		  
+		    $('#btnContinuar').click(function(){   
+		    	$('#campoObrigatorioJusAtraso').hide();	
+		    	$('#justificativaAtraso').val('');   	
+		    	$('#idBodyJusAtraso').hide();
+		    		    	
+		    	let exijeJustificativaAtraso = fnExigeJustificativaAtraso();			  		    	
+		    	if(exijeJustificativaAtraso){		    		
+		    		$('#idBodyJusAtraso').show();		    		
+		    	} 
+		    	
+		    	$('#modalUnPause').modal();
+		    });
+		    $('#btnConfirmUnPause').click(function() {		    		    	
+		    	if ($('#idBodyJusAtraso').is(':hidden') == true) {
+		    		var params = {
+						"justificativa": ''
+					};		   		
+		    		fnUnPauseClient(params);
+		    		$('#modalUnPause').modal('hide');
+		    	} else {
+		    		if($('#justificativaAtraso').val() == null || $('#justificativaAtraso').val().trim() == ''){
+		    			$('#campoObrigatorioJusAtraso').show();		    					    			
+		    		} else {
+		    			$('#campoObrigatorioJusAtraso').hide();	
+		    			
+		    			var params = {
+							"justificativa": $('#justificativaAtraso').val().trim()
+						};
+		    			fnUnPauseClient(params);
+		    			$('#modalUnPause').modal('hide');
+		    		}
+		    	}
+		    }); 
+		    $('#btnConfirmStop').click(function() {
+		    	if($('#campoObrigatorio').is(':hidden') == true) {
+			    	var params = {
+						"motivo": $('#motivoParada').val(),
+						"justificativa": $('#justificativaParada').val()
+					};
+			    	fnPauseClient(params);
+		    	} else {
+		    		if($('#justificativaParada').val().trim() == '') {
+		    			$('#campoObrigatorio').fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+		    		} else {
+		    			var params = {
+							"motivo": $('#motivoParada').val(),
+							"justificativa": $('#justificativaParada').val()
+						};
+				    	fnPauseClient(params);
+		    		}
+		    	}
+		    });   
+		});
+	</script>
+</body>
+</html>
